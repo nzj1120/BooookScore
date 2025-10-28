@@ -4,16 +4,12 @@ The CLI tools can talk to any chat-completions endpoint that follows the OpenAI 
 walks through pointing BooookScore at a locally hosted service such as the `call_llm` helper
 shown earlier.
 
-## 1. Prepare an API key file
+## 1. Provide an API key value
 
-BooookScore always reads the credential from a text file, even if your local model ignores it.
-Create a file with any placeholder value:
-
-```bash
-echo "dummy-key" > local_api_key.txt
-```
-
-Pass the path to this file through `--api_key` for every command that needs model access.
+BooookScore now accepts the API key directly as a string. For local deployments that do not
+validate the credential, you can pass a placeholder such as `empty` (the same value used in the
+`call_llm` helper). If you prefer managing credentials via files, you can still point `--api_key`
+at a text file—the CLI automatically detects whether the argument is a literal key or a path.
 
 ## 2. Verify your local endpoint
 
@@ -24,7 +20,7 @@ and receive a normal chat completion response:
 ```python
 from openai import OpenAI
 
-client = OpenAI(api_key="dummy", base_url="http://10.244.2.114:8808/v1")
+client = OpenAI(api_key="empty", base_url="http://10.244.2.114:8808/v1")
 reply = client.chat.completions.create(
     model="reportify",
     messages=[{"role": "user", "content": "Ping"}],
@@ -37,8 +33,8 @@ If this round-trip works, BooookScore can use the same endpoint.
 ## 3. Run BooookScore commands
 
 Every CLI that calls a model accepts the `--base_url` switch. Combine it with `--api openai`
-(because the request payload follows the OpenAI schema) and the placeholder API key file.
-Below is an end-to-end example that scores a JSON file of summaries:
+(because the request payload follows the OpenAI schema) and your chosen placeholder API key
+string. Below is an end-to-end example that scores a JSON file of summaries:
 
 ```bash
 python -m booookscore.score \
@@ -46,7 +42,7 @@ python -m booookscore.score \
   --annot_path my_annotations.json \
   --model reportify \
   --api openai \
-  --api_key local_api_key.txt \
+  --api_key empty \
   --base_url http://10.244.2.114:8808/v1
 ```
 
@@ -61,7 +57,7 @@ python -m booookscore.summ \
   --summ_path my_summaries.json \
   --model reportify \
   --api openai \
-  --api_key local_api_key.txt \
+  --api_key empty \
   --base_url http://10.244.2.114:8808/v1 \
   --method hier \
   --chunk_size 2048 \
@@ -74,7 +70,7 @@ python -m booookscore.postprocess \
   --input_path my_summaries.json \
   --model reportify \
   --api openai \
-  --api_key local_api_key.txt \
+  --api_key empty \
   --base_url http://10.244.2.114:8808/v1 \
   --remove_artifacts
 ```

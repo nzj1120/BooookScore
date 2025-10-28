@@ -188,7 +188,7 @@ if __name__ == "__main__":
     parser.add_argument("--summ_path", type=str, help="must set if you don't have annotations yet")
     parser.add_argument("--annot_path", type=str, help="path to save annotations to")
     parser.add_argument("--api", type=str, help="api to use", choices=["openai", "anthropic", "together"])
-    parser.add_argument("--api_key", type=str, help="path to a txt file storing your OpenAI api key")
+    parser.add_argument("--api_key", type=str, help="API key string or path to a txt file storing it")
     parser.add_argument("--base_url", type=str, default=None, help="optional base url for OpenAI-compatible endpoints")
     parser.add_argument("--model", type=str, default="gpt-4", help="evaluator model")
     parser.add_argument("--v2", action="store_true", help="use v2, which batches sentences during annotation (this setup was not used in the paper)")

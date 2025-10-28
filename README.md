@@ -74,7 +74,7 @@ python -m booookscore.summ --book_path {book_path} --summ_path {summ_path}
 - `--summ_path`: the path to save the generated summaries
 - `--model`: name of the model to use, must be supported by the API you're using
 - `--api`: which API to use, currently supports `openai`, `anthropic`, `together`
-- `--api_key`: the path to the txt file storing your API key
+- `--api_key`: API key string (or the path to a txt file storing it)
 - `--base_url` (optional): override the default OpenAI endpoint with a compatible base URL (useful for self-hosted services)
 - `--method`: the summarization method to use, "inc" for incremental updating, "hier" for hierarchical merging
 - `--chunk_size`: the desired size of each chunk of text, must be consistent with your data in `book_path`
@@ -85,18 +85,27 @@ Example usage (GPT 4):
 
 ```
 python -m booookscore.summ --book_path all_books_chunked_4096.pkl
-    --summ_path summaries.json --model gpt-4 --api openai --api_key api_key.txt
+    --summ_path summaries.json --model gpt-4 --api openai --api_key sk-abc123
     --method hier --chunk_size 4096 --max_context_len 8192
 ```
 
 To use a self-hosted service that implements the OpenAI Chat Completions API, provide its endpoint via `--base_url`, for example `--base_url http://localhost:8808/v1`. See [docs/local_openai_endpoint.md](docs/local_openai_endpoint.md) for a step-by-step walkthrough using a locally deployed model.
+
+Example usage (OpenAI-compatible local deployment):
+
+```
+python -m booookscore.summ --book_path all_books_chunked_2048.pkl \
+    --summ_path summaries.json --model reportify --api openai --api_key empty \
+    --method hier --chunk_size 2048 --max_context_len 4096 \
+    --max_summary_len 2048 --base_url http://10.244.2.114:8808/v1
+```
 
 Example usage (Claude 3 Opus):
 
 ```
 python -m booookscore.summ --book_path all_books_chunked_150000.pkl 
     --summ_path summaries.json --model claude-3-opus-20240229 
-    --api anthropic --api_key api_key.txt --method hier 
+    --api anthropic --api_key sk-ant-123 --method hier
     --chunk_size 150000 --max_context_len 200000
 ```
 
@@ -105,7 +114,7 @@ Example usage (Mixtral 8x7B):
 ```
 python -m booookscore.summ --book_path all_books_chunked_30000.pkl 
     --summ_path summaries.json --model mistralai/Mixtral-8x7B-Instruct-v0.1
-    --api together --api_key api_key.txt --method hier 
+    --api together --api_key sk-together-123 --method hier
     --chunk_size 30000 --max_context_len 32000
 ```
 
@@ -125,7 +134,7 @@ python -m booookscore.postprocess --input_path {input_path}
 - `--input_path`: the path to the chunked data (pickle file)
 - `--model` (optional): which model to use if you want a LLM to remove summary artifacts
 - `--api` (optional): which API to use, currently supports `openai`, `anthropic`, `together`
-- `--api_key` (optional): the path to the txt file storing your OpenAI API key
+- `--api_key` (optional): API key string (or the path to a txt file storing it)
 - `--base_url` (optional): override the default OpenAI endpoint with a compatible base URL (useful for self-hosted services)
 - `--remove_artifacts` (optional): if specified, it will ask a language model remove artifacts from merging (must also specify `model` and `api_key` in this case)
 
@@ -138,8 +147,8 @@ python -m booookscore.postprocess --input_path summaries.json
 Example usage (with artifact removal):
 
 ```
-python -m booookscore.postprocess --input_path summaries.json --model gpt-4 
-    --api openai --api_key api_key.txt --remove_artifacts
+python -m booookscore.postprocess --input_path summaries.json --model gpt-4
+    --api openai --api_key sk-abc123 --remove_artifacts
 ```
 
 ## Compute BooookScore
@@ -155,7 +164,7 @@ The input summaries must be stored in a json file that maps from book names to f
 - `--annot_path`: the path to model-generated annotations
 - `--model`: which model to use
 - `--api`: which API to use, currently supports `openai`, `anthropic`, `together`
-- `--api_key`: the path to the txt file storing your API key
+- `--api_key`: API key string (or the path to a txt file storing it)
 - `--base_url` (optional): override the default OpenAI endpoint with a compatible base URL (useful for self-hosted services)
 - `--v2` (optional): if specified, it will generate annotations using v2 code and prompt, which uses sentence batching instead of evaluating sentence by sentence (contributed by [@IlyaGusev](https://github.com/IlyaGusev)!)
 - `--batch_size` (optional): batch size to use if using v2
@@ -163,17 +172,17 @@ The input summaries must be stored in a json file that maps from book names to f
 Example usage (original BooookScore):
 
 ```
-python -m booookscore.score --summ_path summaries/chatgpt-2048-hier-cleaned.json 
-    --annot_path annotations.json --model gpt-4 
-    --api openai --api_key api_key.txt
+python -m booookscore.score --summ_path summaries/chatgpt-2048-hier-cleaned.json
+    --annot_path annotations.json --model gpt-4
+    --api openai --api_key sk-abc123
 ```
 
 Example usage (v2 BooookScore with sentence batching):
 
 ```
-python -m booookscore.score --summ_path summaries/chatgpt-2048-hier-cleaned.json 
-    --annot_path annotations.json --model gpt-4 --api openai 
-    --api_key api_key.txt --v2 --batch_size 10
+python -m booookscore.score --summ_path summaries/chatgpt-2048-hier-cleaned.json
+    --annot_path annotations.json --model gpt-4 --api openai
+    --api_key sk-abc123 --v2 --batch_size 10
 ```
 
 # ✅ TODO's for future versions
