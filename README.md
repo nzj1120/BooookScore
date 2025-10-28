@@ -89,7 +89,7 @@ python -m booookscore.summ --book_path all_books_chunked_4096.pkl
     --method hier --chunk_size 4096 --max_context_len 8192
 ```
 
-To use a self-hosted service that implements the OpenAI Chat Completions API, provide its endpoint via `--base_url`, for example `--base_url http://localhost:8808/v1`.
+To use a self-hosted service that implements the OpenAI Chat Completions API, provide its endpoint via `--base_url`, for example `--base_url http://localhost:8808/v1`. See [docs/local_openai_endpoint.md](docs/local_openai_endpoint.md) for a step-by-step walkthrough using a locally deployed model.
 
 Example usage (Claude 3 Opus):
 
