@@ -24,9 +24,10 @@ class Scorer():
         annot_path,
         template_path,
         v2=False,
-        batch_size=10
+        batch_size=10,
+        base_url=None
     ):
-        self.client = APIClient(api, api_key, model)
+        self.client = APIClient(api, api_key, model, base_url=base_url)
         self.summ_path = summ_path
         self.annot_path = annot_path
         self.template_path = template_path
@@ -188,6 +189,7 @@ if __name__ == "__main__":
     parser.add_argument("--annot_path", type=str, help="path to save annotations to")
     parser.add_argument("--api", type=str, help="api to use", choices=["openai", "anthropic", "together"])
     parser.add_argument("--api_key", type=str, help="path to a txt file storing your OpenAI api key")
+    parser.add_argument("--base_url", type=str, default=None, help="optional base url for OpenAI-compatible endpoints")
     parser.add_argument("--model", type=str, default="gpt-4", help="evaluator model")
     parser.add_argument("--v2", action="store_true", help="use v2, which batches sentences during annotation (this setup was not used in the paper)")
     parser.add_argument("--batch_size", type=int, help="batch size if v2 is used")
@@ -201,6 +203,7 @@ if __name__ == "__main__":
         model=args.model,
         api=args.api,
         api_key=args.api_key,
+        base_url=args.base_url,
         summ_path=args.summ_path,
         annot_path=args.annot_path,
         template_path=template_path,

@@ -15,12 +15,12 @@ def count_tokens(text):
 
 
 class APIClient():
-    def __init__(self, api, key_path, model):
+    def __init__(self, api, key_path, model, base_url=None):
         assert key_path.endswith(".txt"), "api key path must be a txt file."
         self.api = api
         self.model = model
         if api == "openai":
-            self.client = OpenAIClient(key_path, model)
+            self.client = OpenAIClient(key_path, model, base_url=base_url)
         elif api == "anthropic":
             self.client = AnthropicClient(key_path, model)
         elif api == "together":
@@ -42,10 +42,11 @@ class APIClient():
 
 
 class BaseClient:
-    def __init__(self, key_path, model):
+    def __init__(self, key_path, model, base_url=None):
         with open(key_path, "r") as f:
             self.key = f.read().strip()
         self.model = model
+        self.base_url = base_url
 
     def obtain_response(
         self,
@@ -70,9 +71,12 @@ class BaseClient:
 
 
 class OpenAIClient(BaseClient):
-    def __init__(self, key_path, model):
-        super().__init__(key_path, model)
-        self.client = OpenAI(api_key=self.key)
+    def __init__(self, key_path, model, base_url=None):
+        super().__init__(key_path, model, base_url=base_url)
+        if self.base_url:
+            self.client = OpenAI(api_key=self.key, base_url=self.base_url)
+        else:
+            self.client = OpenAI(api_key=self.key)
 
     def send_request(self, prompt, max_tokens, temperature):
         response = self.client.chat.completions.create(

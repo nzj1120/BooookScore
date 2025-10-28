@@ -20,9 +20,10 @@ class Summarizer():
         chunk_size,
         max_context_len,
         max_summary_len,
-        word_ratio=0.65
+        word_ratio=0.65,
+        base_url=None
     ):
-        self.client = APIClient(api, api_key, model)
+        self.client = APIClient(api, api_key, model, base_url=base_url)
         self.summ_path = summ_path
         assert method in ['inc', 'hier']
         self.method = method
@@ -333,6 +334,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, help="summarizer model")
     parser.add_argument("--api", type=str, help="api to use", choices=["openai", "anthropic", "together"])
     parser.add_argument("--api_key", type=str, help="path to a txt file storing your OpenAI api key")
+    parser.add_argument("--base_url", type=str, default=None, help="optional base url for OpenAI-compatible endpoints")
     parser.add_argument("--method", type=str, help="method for summarization", choices=['inc', 'hier'])
     parser.add_argument("--chunk_size", type=int, default=2048)
     parser.add_argument("--max_context_len", type=int, help="max content length of the model")
@@ -347,6 +349,7 @@ if __name__ == "__main__":
         args.method,
         args.chunk_size,
         args.max_context_len,
-        args.max_summary_len
+        args.max_summary_len,
+        base_url=args.base_url
     )
     summarizer.get_summaries(args.book_path)
