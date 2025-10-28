@@ -50,7 +50,10 @@ python -m booookscore.score \
   --base_url http://10.244.2.114:8808/v1
 ```
 
-Use the same `--base_url` flag when generating summaries or running post-processing:
+Use the same `--base_url` flag when generating summaries or running post-processing. The `--api`
+option selects which built-in provider client BooookScore uses (`openai`, `anthropic`, or
+`together`). For any OpenAI-compatible endpoint—self-hosted or not—set it to `openai` so the
+request schema matches what your service expects:
 
 ```bash
 python -m booookscore.summ \
