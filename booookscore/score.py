@@ -38,42 +38,43 @@ class Scorer():
     def validate_response(self, response):
         lines = response.split('\n')
         if len(lines) < 2:
-            print("Number of lines is less than 2")
-            return False, [], []
-        
+            return False, None, None, "number of lines is less than 2"
+
         # only keep the lines with questions and types
-        lines = [line for line in lines if "Questions: " in line or "Types: " in line]
-        
-        questions_pos = lines[0].find("Questions: ")
-        types_pos = -1
-        types_pos = lines[1].find("Types: ")
+        filtered = [line for line in lines if "Questions: " in line or "Types: " in line]
+
+        if len(filtered) < 2:
+            return False, None, None, "questions or types line missing"
+
+        questions_pos = filtered[0].find("Questions: ")
+        types_pos = filtered[1].find("Types: ")
 
         if questions_pos == -1 or types_pos == -1:
-            print("Questions or types not found")
-            return False, [], []
-        
-        questions = lines[0][questions_pos + len("Questions: "):].strip()
-        types = lines[1][types_pos + len("Types: "):].strip()
-        types = types.lower()
+            return False, None, None, "questions or types label not found"
+
+        questions = filtered[0][questions_pos + len("Questions: "):].strip()
+        types = filtered[1][types_pos + len("Types: "):].strip().lower()
+
+        if not questions:
+            return False, None, None, "questions field is empty"
+
+        if not types:
+            return False, None, None, "types field is empty"
 
         if "no confusion" in questions:
             if "no confusion" not in types:
-                print("No confusion in questions but not in types")
-                return False, [], []
-            else:
-                return True, None, None
+                return False, None, None, "no confusion mismatch between questions and types"
+            return True, None, None, None
 
-        if types is not None:
-            types = types.split(', ')
-            for t in types:
-                if t.lower() not in self.all_labels:
-                    print(f"Invalid type: {t}")
-                    return False, [], []
-        
-        if questions is not None and types is None:
-            raise ValueError("Questions is not None but types is None")
+        types_list = [t.strip() for t in types.split(',') if t.strip()]
+        if not types_list:
+            return False, None, None, "types list is empty"
 
-        return True, questions, types
+        for t in types_list:
+            if t.lower() not in self.all_labels:
+                return False, None, None, f"invalid type: {t}"
+
+        return True, questions, types_list, None
 
     def gen_batch(self, records: List[Any], batch_size: int):
         batch_start = 0
@@ -139,10 +140,18 @@ class Scorer():
                 for i, sentence in tqdm(enumerate(sentences), total=len(sentences), desc="Iterating over sentences"):
                     prompt = template.format(summary, sentence)
                     response = self.client.obtain_response(prompt, max_tokens=100, temperature=0)
-                    valid, questions, types = self.validate_response(response)
+                    valid, questions, types, error = self.validate_response(response)
+                    retry_count = 0
                     while not valid:
-                        response = self.client.obtain_response(prompt, max_tokens=max_len, temperature=0)
-                        valid, questions, types = self.validate_response(response)
+                        retry_count += 1
+                        print(
+                            f"Invalid response (attempt {retry_count}) for sentence: {error}\n"
+                            f"Response: {response}"
+                        )
+                        if retry_count >= 5:
+                            raise RuntimeError("Exceeded maximum retries when validating response")
+                        response = self.client.obtain_response(prompt, max_tokens=100, temperature=0)
+                        valid, questions, types, error = self.validate_response(response)
                     annots[book][sentence] = {
                         'questions': questions,
                         'types': types
