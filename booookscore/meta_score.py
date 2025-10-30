@@ -27,6 +27,12 @@ def main() -> None:
         default=None,
         help="prompt template for detecting meta commentary",
     )
+    parser.add_argument(
+        "--context_window",
+        type=int,
+        default=2,
+        help="number of neighboring sentences to provide as context for each judgment",
+    )
     args = parser.parse_args()
 
     if args.template_path is None:
@@ -49,6 +55,7 @@ def main() -> None:
         batch_size=args.batch_size,
         labels=META_LABELS,
         no_issue_token="no meta issues",
+        context_window=args.context_window,
     )
     clean_score = scorer.get_score()
     meta_ratio = 1 - clean_score

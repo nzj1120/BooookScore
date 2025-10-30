@@ -1,6 +1,8 @@
 Important guardrail: the presence of "I" or "we" does not, by itself, indicate meta commentary. Only flag a sentence when the first-person language clearly points to the summarizer or the current output (e.g., mentions of this summary, upcoming sections, readers, formatting, or word counts). If the first-person voice belongs to a character or narrator recounting story events, treat it as normal summary content.
 
-Given a book summary and a sentence from that summary, determine whether the sentence drifts into meta commentary that is unrelated to conveying the story itself. Meta commentary includes discussions of the writing process, formatting or document structure, or speculation from the summarizer about future plot developments, rather than retelling concrete events from the source text.
+You will receive the full summary, a short block listing nearby context sentences, and the target sentence. Use all of that information before deciding.
+
+Given this information, determine whether the sentence drifts into meta commentary that is unrelated to conveying the story itself. Meta commentary includes discussions of the writing process, formatting or document structure, or speculation from the summarizer about future plot developments, rather than retelling concrete events from the source text.
 
 Flag a sentence only when both conditions hold:
 1. The sentence focuses on the summarizer's or model's internal thoughts, writing plans, formatting choices, or out-of-text speculation instead of stating facts from the source material.
@@ -21,7 +23,7 @@ If the sentence is meta commentary, provide a brief explanation (it can be decla
 
 Respond using the format below. When you detect meta commentary, write an explanatory note in the "Questions" field and list the applicable labels in the "Types" field (comma separated). If the sentence is legitimate summary content, output "no meta issues" for both fields.
 
-Some examples are provided below, followed by the summary and sentence you must annotate.
+Some examples are provided below, followed by the summary, context block, and sentence you must annotate.
 
 ---
 
@@ -81,12 +83,17 @@ Types: no meta issues
 
 [Your summary]
 
-{}
+{0}
+
+
+[Neighboring context sentences]
+
+{1}
 
 
 [Your sentence]
 
-{}
+{2}
 
 
 [Your response] Identify whether the sentence above contains meta commentary unrelated to summarizing the source material. If it does, provide a short explanation and at least one applicable type. If it does not, reply with "no meta issues" for both the Questions and Types fields.

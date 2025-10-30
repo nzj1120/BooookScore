@@ -27,7 +27,8 @@ class Scorer():
         batch_size=10,
         base_url=None,
         labels=None,
-        no_issue_token="no confusion"
+        no_issue_token="no confusion",
+        context_window=0,
     ):
         self.client = APIClient(api, api_key, model, base_url=base_url)
         self.summ_path = summ_path
@@ -38,6 +39,7 @@ class Scorer():
         default_labels = ['entity omission', 'event omission', 'causal omission', 'salience', 'discontinuity', 'duplication', 'inconsistency', 'language']
         self.all_labels = [label.lower() for label in (labels or default_labels)]
         self.no_issue_token = no_issue_token.lower()
+        self.context_window = context_window
 
     def validate_response(self, response):
         lines = response.split('\n')
@@ -97,8 +99,22 @@ class Scorer():
         answers = json.loads(response[start_index:end_index])
         return answers
 
-    def calc_instance(self, summary, sentences, template, num_retries, model_name):
-        formatted_batch = "\n".join([f"{n+1}. {s}" for n, s in enumerate(sentences)])
+    def calc_instance(self, summary, sentences, template, num_retries, model_name, contexts=None):
+        if contexts is not None:
+            formatted_entries = []
+            for n, (sentence, context_lines) in enumerate(zip(sentences, contexts)):
+                if context_lines:
+                    context_block = "\n".join(f"     - {c}" for c in context_lines)
+                else:
+                    context_block = "     (no surrounding sentences provided)"
+                entry = (
+                    f"{n+1}. Sentence: {sentence}\n"
+                    f"   Context:\n{context_block}"
+                )
+                formatted_entries.append(entry)
+            formatted_batch = "\n".join(formatted_entries)
+        else:
+            formatted_batch = "\n".join([f"{n+1}. {s}" for n, s in enumerate(sentences)])
         prompt = template.format(summary=summary, sentences=formatted_batch)
         for _ in range(num_retries):
             try:
@@ -142,12 +158,27 @@ class Scorer():
         for book, summary in tqdm(summaries.items(), total=len(summaries), desc="Iterating over summaries"):
             if book in annots:
                 print(f"Skipping {book}")
-            
+
             sentences = sent_tokenize(summary)
+            context_lookup = {}
+            if self.context_window > 0:
+                for idx, sentence in enumerate(sentences):
+                    start = max(0, idx - self.context_window)
+                    end = min(len(sentences), idx + self.context_window + 1)
+                    neighbors = [sentences[j] for j in range(start, end) if j != idx]
+                    context_lookup[sentence] = neighbors
 
             if not self.v2:
                 for i, sentence in tqdm(enumerate(sentences), total=len(sentences), desc="Iterating over sentences"):
-                    prompt = template.format(summary, sentence)
+                    if self.context_window > 0:
+                        context_lines = context_lookup.get(sentence, [])
+                        if context_lines:
+                            context_text = "\n".join(f"- {c}" for c in context_lines)
+                        else:
+                            context_text = "(no surrounding sentences provided)"
+                        prompt = template.format(summary, context_text, sentence)
+                    else:
+                        prompt = template.format(summary, sentence)
                     response = self.client.obtain_response(prompt, max_tokens=100, temperature=0)
                     valid, questions, types, error = self.validate_response(response)
                     retry_count = 0
@@ -167,10 +198,22 @@ class Scorer():
                     }
             else:
                 sentences = [s for s in sentences if s not in annots[book]]
+                if not sentences:
+                    continue
+                contexts = None
+                if self.context_window > 0:
+                    contexts = [context_lookup.get(s, []) for s in sentences]
                 lock = Lock()
-                batches = list(self.gen_batch(sentences, self.batch_size))
+                batches = []
+                for batch_indices in self.gen_batch(list(range(len(sentences))), self.batch_size):
+                    batch_sentences = [sentences[idx] for idx in batch_indices]
+                    batch_contexts = None
+                    if contexts is not None:
+                        batch_contexts = [contexts[idx] for idx in batch_indices]
+                    batches.append((batch_sentences, batch_contexts))
                 tasks = [
-                    (summary, batch, template, num_retries, self.client.model) for batch in batches
+                    (summary, batch_sentences, template, num_retries, self.client.model, batch_contexts)
+                    for batch_sentences, batch_contexts in batches
                 ]
                 with ThreadPool(2) as pool:
                     callback = self.create_callback(book, annots, self.annot_path, lock)
