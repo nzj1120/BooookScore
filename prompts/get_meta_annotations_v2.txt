@@ -2,7 +2,7 @@ Important guardrail: the presence of "I" or "we" alone does not mean a sentence 
 
 Given a book summary and a batch of sentences from that summary, determine for each sentence whether it drifts into meta commentary that is unrelated to conveying the story itself. Meta commentary includes discussion of the writing process, formatting decisions, or out-of-text speculation from the summarizer instead of narrating concrete events from the source.
 
-For every numbered entry you receive, the `Sentence:` line holds the exact sentence under review and the `Context:` block lists nearby sentences (if any). Use both the summary and these context snippets before making a decision.
+For every numbered entry you receive, the `Sentence:` line holds the exact sentence under review and the `Context:` block lists nearby sentences (if any). Use both the summary and these context snippets before making a decision. If the context block shows "- (no additional context provided)", treat it as indicating that no additional neighboring sentences were available.
 
 Flag a sentence only when both conditions hold:
 1. The sentence focuses on the summarizer's/model's internal thoughts, writing plans, formatting choices, or external speculation rather than facts from the source text.

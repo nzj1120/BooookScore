@@ -100,21 +100,21 @@ class Scorer():
         return answers
 
     def calc_instance(self, summary, sentences, template, num_retries, model_name, contexts=None):
-        if contexts is not None:
-            formatted_entries = []
-            for n, (sentence, context_lines) in enumerate(zip(sentences, contexts)):
-                if context_lines:
-                    context_block = "\n".join(f"     - {c}" for c in context_lines)
-                else:
-                    context_block = "     (no surrounding sentences provided)"
-                entry = (
-                    f"{n+1}. Sentence: {sentence}\n"
-                    f"   Context:\n{context_block}"
-                )
-                formatted_entries.append(entry)
-            formatted_batch = "\n".join(formatted_entries)
-        else:
-            formatted_batch = "\n".join([f"{n+1}. {s}" for n, s in enumerate(sentences)])
+        if contexts is None:
+            contexts = [[] for _ in sentences]
+
+        formatted_entries = []
+        for n, (sentence, context_lines) in enumerate(zip(sentences, contexts)):
+            if context_lines:
+                context_block = "\n".join(f"     - {c}" for c in context_lines)
+            else:
+                context_block = "     - (no additional context provided)"
+            entry = (
+                f"{n+1}. Sentence: {sentence}\n"
+                f"   Context:\n{context_block}"
+            )
+            formatted_entries.append(entry)
+        formatted_batch = "\n".join(formatted_entries)
         prompt = template.format(summary=summary, sentences=formatted_batch)
         for _ in range(num_retries):
             try:
@@ -161,24 +161,20 @@ class Scorer():
 
             sentences = sent_tokenize(summary)
             context_lookup = {}
-            if self.context_window > 0:
-                for idx, sentence in enumerate(sentences):
-                    start = max(0, idx - self.context_window)
-                    end = min(len(sentences), idx + self.context_window + 1)
-                    neighbors = [sentences[j] for j in range(start, end) if j != idx]
-                    context_lookup[sentence] = neighbors
+            for idx, sentence in enumerate(sentences):
+                start = max(0, idx - self.context_window)
+                end = min(len(sentences), idx + self.context_window + 1)
+                neighbors = [sentences[j] for j in range(start, end) if j != idx]
+                context_lookup[sentence] = neighbors
 
             if not self.v2:
                 for i, sentence in tqdm(enumerate(sentences), total=len(sentences), desc="Iterating over sentences"):
-                    if self.context_window > 0:
-                        context_lines = context_lookup.get(sentence, [])
-                        if context_lines:
-                            context_text = "\n".join(f"- {c}" for c in context_lines)
-                        else:
-                            context_text = "(no surrounding sentences provided)"
-                        prompt = template.format(summary, context_text, sentence)
+                    context_lines = context_lookup.get(sentence, [])
+                    if context_lines:
+                        context_text = "\n".join(f"- {c}" for c in context_lines)
                     else:
-                        prompt = template.format(summary, sentence)
+                        context_text = "- (no additional context provided)"
+                    prompt = template.format(summary, context_text, sentence)
                     response = self.client.obtain_response(prompt, max_tokens=100, temperature=0)
                     valid, questions, types, error = self.validate_response(response)
                     retry_count = 0
@@ -200,9 +196,7 @@ class Scorer():
                 sentences = [s for s in sentences if s not in annots[book]]
                 if not sentences:
                     continue
-                contexts = None
-                if self.context_window > 0:
-                    contexts = [context_lookup.get(s, []) for s in sentences]
+                contexts = [context_lookup.get(s, []) for s in sentences]
                 lock = Lock()
                 batches = []
                 for batch_indices in self.gen_batch(list(range(len(sentences))), self.batch_size):
@@ -255,6 +249,12 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, default="gpt-4", help="evaluator model")
     parser.add_argument("--v2", action="store_true", help="use v2, which batches sentences during annotation (this setup was not used in the paper)")
     parser.add_argument("--batch_size", type=int, help="batch size if v2 is used")
+    parser.add_argument(
+        "--context_window",
+        type=int,
+        default=0,
+        help="number of neighboring sentences to provide as context for each judgment",
+    )
     args = parser.parse_args()
 
     if args.v2:
@@ -270,7 +270,8 @@ if __name__ == "__main__":
         annot_path=args.annot_path,
         template_path=template_path,
         v2=args.v2,
-        batch_size=args.batch_size
+        batch_size=args.batch_size,
+        context_window=args.context_window,
     )
     score = scorer.get_score()
     print(f"BooookScore = {score}")

@@ -1,6 +1,6 @@
 Important guardrail: the presence of "I" or "we" does not, by itself, indicate meta commentary. Only flag a sentence when the first-person language clearly points to the summarizer or the current output (e.g., mentions of this summary, upcoming sections, readers, formatting, or word counts). If the first-person voice belongs to a character or narrator recounting story events, treat it as normal summary content.
 
-You will receive the full summary, a short block listing nearby context sentences, and the target sentence. Use all of that information before deciding.
+You will receive the full summary, a short block listing nearby context sentences, and the target sentence. Use all of that information before deciding. If the context block contains "- (no additional context provided)", treat it as indicating that there were no extra neighboring sentences to surface.
 
 Given this information, determine whether the sentence drifts into meta commentary that is unrelated to conveying the story itself. Meta commentary includes discussions of the writing process, formatting or document structure, or speculation from the summarizer about future plot developments, rather than retelling concrete events from the source text.
 

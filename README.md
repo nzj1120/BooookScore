@@ -156,6 +156,7 @@ python -m booookscore.postprocess --input_path summaries.json --model gpt-4
 ```
 python -m booookscore.score --summ_path {summ_path} --annot_path {annot_path}
     --model {model} --api {api} --api_key {api_key} [--base_url {base_url}]
+    [--context_window {context_window}]
 ```
 
 The input summaries must be stored in a json file that maps from book names to final book summaries.
@@ -166,6 +167,7 @@ The input summaries must be stored in a json file that maps from book names to f
 - `--api`: which API to use, currently supports `openai`, `anthropic`, `together`
 - `--api_key`: API key string (or the path to a txt file storing it)
 - `--base_url` (optional): override the default OpenAI endpoint with a compatible base URL (useful for self-hosted services)
+- `--context_window` (optional): how many neighboring sentences to include for each decision (defaults to 0 for classic BooookScore).
 - `--v2` (optional): if specified, it will generate annotations using v2 code and prompt, which uses sentence batching instead of evaluating sentence by sentence (contributed by [@IlyaGusev](https://github.com/IlyaGusev)!)
 - `--batch_size` (optional): batch size to use if using v2
 
@@ -192,12 +194,13 @@ Use the meta commentary auditor when you want to quantify how often a summary dr
 ```
 python -m booookscore.meta_score --summ_path {summ_path} --annot_path {annot_path}
     --model {model} --api {api} --api_key {api_key}
-    [--base_url {base_url}] [--template_path {template_path}]
+    [--base_url {base_url}] [--template_path {template_path}] [--context_window {context_window}]
 ```
 
 - `--summ_path`: JSON mapping of book names to final summaries.
 - `--annot_path`: where the meta commentary annotations should be stored.
 - `--template_path` (optional): override the default meta commentary prompt (`prompts/get_meta_annotations.txt`).
+- `--context_window` (optional): number of neighboring sentences to surface for each judgment (defaults to 2).
 - `--v2` / `--batch_size`: behave the same as in `booookscore.score` and enable batched annotations.
 
 The evaluator labels meta commentary with the following categories:
