@@ -5,6 +5,7 @@ import argparse
 import json
 import math
 import tiktoken
+from pathlib import Path
 from tqdm import tqdm
 from collections import defaultdict
 from utils import APIClient, count_tokens
@@ -179,16 +180,18 @@ class Summarizer():
         return final_summary, summaries
 
     def get_hierarchical_summaries(self, book_path):
-        data = pickle.load(open(book_path, 'rb'))
+        with open(book_path, 'rb') as f:
+            data = pickle.load(f)
         self.templates = {
-            'init_template': open("prompts/get_summaries_hier/init.txt", "r").read(),
-            'template': open("prompts/get_summaries_hier/merge.txt", "r").read(),
-            'context_template': open("prompts/get_summaries_hier/merge_context.txt", "r").read()
+            'init_template': Path("prompts/get_summaries_hier/init.txt").read_text(encoding='utf-8'),
+            'template': Path("prompts/get_summaries_hier/merge.txt").read_text(encoding='utf-8'),
+            'context_template': Path("prompts/get_summaries_hier/merge_context.txt").read_text(encoding='utf-8')
         }
         summaries = defaultdict(dict)
         if os.path.exists(self.summ_path):
             print("Loading existing summaries...")
-            summaries = json.load(open(self.summ_path, 'r'))
+            with open(self.summ_path, 'r', encoding='utf-8') as f:
+                summaries = json.load(f)
             # convert all keys into int
             for book in summaries:
                 summaries[book]['summaries_dict'] = defaultdict(list, {int(k): v for k, v in summaries[book]['summaries_dict'].items()})
@@ -203,8 +206,8 @@ class Summarizer():
             }
             final_summary, summaries = self.summarize_book(book, chunks, summaries)
             summaries[book]['final_summary'] = final_summary
-            with open(self.summ_path, 'w') as f:
-                json.dump(summaries, f)
+            with open(self.summ_path, 'w', encoding='utf-8') as f:
+                json.dump(summaries, f, ensure_ascii=False)
 
     def compress(self, response, summary, chunk, summary_len, word_limit, num_chunks, j):
         chunk_trims = 0
@@ -255,11 +258,12 @@ class Summarizer():
         return compressed_summary, response, chunk_trims, 0
 
     def get_incremental_summaries(self, book_path):
-        data = pickle.load(open(book_path, 'rb'))
+        with open(book_path, 'rb') as f:
+            data = pickle.load(f)
         self.templates = {
-            "init_template": open("prompts/get_summaries_inc/init.txt", "r").read(),
-            "template": open("prompts/get_summaries_inc/intermediate.txt", "r").read(),
-            "compress_template": open("prompts/get_summaries_inc/compress.txt", "r").read()
+            "init_template": Path("prompts/get_summaries_inc/init.txt").read_text(encoding='utf-8'),
+            "template": Path("prompts/get_summaries_inc/intermediate.txt").read_text(encoding='utf-8'),
+            "compress_template": Path("prompts/get_summaries_inc/compress.txt").read_text(encoding='utf-8')
         }
 
         num_trims = 0
@@ -268,7 +272,8 @@ class Summarizer():
 
         new_data = {}
         if os.path.exists(self.summ_path):
-            new_data = json.load(open(self.summ_path, "r"))
+            with open(self.summ_path, "r", encoding='utf-8') as f:
+                new_data = json.load(f)
         
         for i, book in tqdm(enumerate(data), total=len(data), desc="Iterating over books"):
             if book in new_data and len(new_data[book]) >= len(data[book]):
@@ -311,10 +316,12 @@ class Summarizer():
 
                 if (j + 1) % 10 == 0:
                     new_data[book] = new_chunks
-                    json.dump(new_data, open(self.summ_path, 'w'))
-                
+                    with open(self.summ_path, 'w', encoding='utf-8') as f:
+                        json.dump(new_data, f, ensure_ascii=False)
+
             new_data[book] = new_chunks
-            json.dump(new_data, open(self.summ_path, 'w'))
+            with open(self.summ_path, 'w', encoding='utf-8') as f:
+                json.dump(new_data, f, ensure_ascii=False)
 
     def get_summaries(self, book_path):
         if self.method == 'inc':

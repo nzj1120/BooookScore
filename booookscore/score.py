@@ -113,21 +113,23 @@ class Scorer():
                     sentence = answer.pop("sentence")
                     cache[book][sentence] = answer
                 cache_temp_path = cache_path + ".tmp"
-                with open(cache_temp_path, "w") as w:
-                    json.dump(cache, w)
+                with open(cache_temp_path, "w", encoding="utf-8") as w:
+                    json.dump(cache, w, ensure_ascii=False)
                 shutil.move(cache_temp_path, cache_path)
         return on_result
 
     def get_annot(self, num_retries=3):
         assert self.summ_path and os.path.exists(self.summ_path), f"Summaries path {self.summ_path} does not exist"
-        summaries = json.load(open(self.summ_path, 'r'))
+        with open(self.summ_path, 'r', encoding='utf-8') as f:
+            summaries = json.load(f)
         annots = defaultdict(dict)
         if os.path.exists(self.annot_path):
-            annots = json.load(open(self.annot_path, 'r'))
+            with open(self.annot_path, 'r', encoding='utf-8') as f:
+                annots = json.load(f)
             annots = defaultdict(dict, annots)
             print(f"LOADED {len(annots)} annots FROM {self.annot_path}")
 
-        with open(template_path, 'r') as f:
+        with open(self.template_path, 'r', encoding='utf-8') as f:
             template = f.read()
         
         for book, summary in tqdm(summaries.items(), total=len(summaries), desc="Iterating over summaries"):
@@ -171,14 +173,15 @@ class Scorer():
                     ]
                     results = [result.get() for result in results]
             
-            with open(self.annot_path, 'w') as f:
-                json.dump(annots, f)
+            with open(self.annot_path, 'w', encoding='utf-8') as f:
+                json.dump(annots, f, ensure_ascii=False)
 
     def get_score(self):
         if not os.path.exists(self.annot_path):
             print("No annotations found, getting annotations...")
             self.get_annot()
-        annots = json.load(open(self.annot_path, 'r'))
+        with open(self.annot_path, 'r', encoding='utf-8') as f:
+            annots = json.load(f)
         annots = defaultdict(dict, annots)
         annots = {k: v for k, v in sorted(annots.items(), key=lambda item: item[0])}
         scores = dict()
