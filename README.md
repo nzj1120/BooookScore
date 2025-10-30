@@ -213,6 +213,25 @@ The CLI prints two aggregates:
 - `MetaContentScore`: share of sentences that remain focused on the book (higher is better).
 - `MetaContentRate`: fraction of sentences flagged as meta commentary.
 
+## Evaluate summary faithfulness with AlignEval
+
+If you want a lightweight, local metric suite without prompting LLMs, the `align_eval/` package offers four statistics computed from Chinese BERT sentence embeddings and monotonic alignments: Coverage, Alignment Confidence, PFS, and SCS. It consumes the same JSON format as BooookScore (book → text) for both the source material and the generated summaries.
+
+```bash
+python -m align_eval.cli \
+  --source_path data/original.json \
+  --summary_path summaries/my_summary.json \
+  --output_path reports/align_eval.json \
+  --model_name hfl/chinese-bert-wwm-ext \
+  --alignment nw \
+  --bandwidth 4 \
+  --pfs_gamma 3.0 \
+  --alpha 10 \
+  --scs_beta 0.1
+```
+
+The command writes a detailed JSON report (global metrics + per-sentence diagnostics) and prints macro averages across all evaluated books. For API usage or customization options, see [align_eval/README.md](align_eval/README.md).
+
 # ✅ TODO's for future versions
 
 - Rework the data structure used for hierarchical summaries, it would be best to maintain a mapping between summaries that are one level apart.
