@@ -1,16 +1,25 @@
-Given a book summary and a batch of sentences from that summary, determine whether each sentence drifts into meta commentary that is unrelated to conveying the story itself. Meta commentary includes the model reflecting on its writing process, formatting decisions, or speculative analysis of the plot rather than narrating concrete events.
+Important guardrail: the presence of "I" or "we" alone does not mean a sentence is meta commentary. Only flag a sentence when the first-person language clearly refers to the summarizer or current output (mentions of this summary, planned sections, readers, formatting, word counts, etc.). If the first-person perspective belongs to a narrator or character recounting story events, treat it as normal summary content.
+
+Given a book summary and a batch of sentences from that summary, determine for each sentence whether it drifts into meta commentary that is unrelated to conveying the story itself. Meta commentary includes discussion of the writing process, formatting decisions, or out-of-text speculation from the summarizer instead of narrating concrete events from the source.
 
 Flag a sentence only when both conditions hold:
-1. The sentence focuses on internal reasoning about how to write or interpret the summary rather than recounting facts from the source text.
+1. The sentence focuses on the summarizer's/model's internal thoughts, writing plans, formatting choices, or external speculation rather than facts from the source text.
 2. Removing the sentence would make the summary more faithful to the source material.
 
-When a sentence is meta commentary, provide a short explanation and at least one of the following labels:
-- writing process: comments about progress, tone selection, future sections, etc.
-- formatting/meta: mentions of outlines, headings, bullet points, or document structure.
-- plot speculation: predictions or analytical takes about the story beyond the given material.
-- other meta: any additional meta-level reflection unrelated to the actual storyline.
+Decision checklist:
+1. Hard clues: explicit mentions of the summary, writing strategy, readers, structure, sections, bullet lists, or length control point to meta commentary.
+2. First-person attribution: if first-person language points to the summarizer/output (supported by hard clues), lean toward meta. If it clearly belongs to an in-story voice describing events, do not flag it.
+3. Speculation attribution: predictions coming from the summarizer (e.g., sequel guesses, author intent beyond the text) count as plot speculation. If the speculation is attributed to characters within the story, do not flag it.
 
-Answer with a JSON list that matches the examples below. For sentences that are normal summary content, use null for both the `questions` and `types` fields. For meta commentary sentences, supply a string explanation in `questions` (it can be a declarative note) and a list of lowercase label strings in `types`. Always include the `sentence_num` and `sentence` fields in each object.
+When uncertain, default to a lenient decision and mark the sentence as having no meta issues.
+
+For sentences that qualify as meta commentary, provide a short explanation and at least one of the labels below:
+- writing process: statements about writing plans, tone adjustments, progress tracking, or word/length management.
+- formatting/meta: references to outlines, headings, bullet points, document sections, or other structural instructions.
+- plot speculation: predictions or interpretations about future story developments beyond the provided text.
+- other meta: any other meta-level reflection unrelated to the actual storyline.
+
+Answer with a JSON list that matches the examples below. For sentences that are normal summary content, use null for both the `questions` and `types` fields. For meta commentary sentences, supply a string explanation in `questions` (it can be declarative) and a list of lowercase label strings in `types`. Always include the `sentence_num` and `sentence` fields in each object.
 
 ---
 
@@ -21,6 +30,7 @@ The memoir follows Dr. Hana Ortiz as she documents a year spent rebuilding a rur
 1. To keep the tone balanced, I'm planning to interleave emotional beats with factual updates in this summary.
 2. Ortiz designs a rotating shift schedule so staff can visit remote villages without collapsing from exhaustion.
 3. The closing section should probably highlight how many pages the original memoir devoted to patient testimonies.
+4. I suspected the visiting official was lying, so I shadowed her meetings to confirm my doubts.
 
 [Example responses]
 [
@@ -41,6 +51,12 @@ The memoir follows Dr. Hana Ortiz as she documents a year spent rebuilding a rur
         "sentence": "The closing section should probably highlight how many pages the original memoir devoted to patient testimonies.",
         "questions": "This line talks about structuring the summary instead of describing the memoir.",
         "types": ["formatting/meta"]
+    },
+    {
+        "sentence_num": 4,
+        "sentence": "I suspected the visiting official was lying, so I shadowed her meetings to confirm my doubts.",
+        "questions": null,
+        "types": null
     }
 ]
 
