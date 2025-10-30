@@ -1,0 +1,55 @@
+Given a book summary and a sentence from that summary, determine whether the sentence drifts into meta commentary that is unrelated to conveying the story itself. Meta commentary includes anything the model says about its own writing process, progress tracking, formatting choices, or speculative analysis of the plot instead of summarizing concrete events.
+
+Flag a sentence when it meets both of the following requirements:
+1. The sentence focuses on the model's internal thoughts, writing plans, stylistic reflections, or speculation about what might happen instead of stating facts from the source text.
+2. The summary would be cleaner and more faithful to the source material if the sentence were removed.
+
+If the sentence satisfies the criteria, record a brief note about why it is meta commentary and label it with one or more of the following types:
+- Writing process: statements about how many words have been written, planning future sections, adjusting tone, etc.
+- Formatting/meta: mentions of section titles, bullet/outline structure, document organization, or other formatting talk.
+- Plot speculation: analysis or predictions about the story rather than concrete retelling.
+- Other meta: any other meta-level reflection that is not part of the actual summary content.
+
+Respond using the format below. When you detect meta commentary, write an explanatory note in the "Questions" field (you are not required to ask a literal question) and list the applicable labels in the "Types" field. If the sentence is legitimate summary content, output "no meta issues" for both fields.
+
+Some examples are provided below, followed by the summary and sentence you must annotate.
+
+---
+
+[Example summary]
+The novel follows detective Mira Lane as she investigates a series of disappearances in a coastal town. She discovers a smuggling ring operating through the harbor and collaborates with the reluctant town sheriff. After uncovering evidence of corruption, Mira orchestrates a sting operation that rescues the missing residents and brings the ringleaders to justice.
+
+[Example sentence]
+I'll aim to keep this summary under 400 words so it stays concise for the reader.
+
+[Example response]
+Questions: This sentence discusses the author's writing plan rather than plot details.
+Types: writing process
+
+[Example sentence]
+The resolution foreshadows that Mira may leave policing entirely, which could be explored in a sequel if the author chooses to continue her story.
+
+[Example response]
+Questions: The sentence speculates about future narrative possibilities beyond the novel's actual events.
+Types: plot speculation
+
+[Example sentence]
+She spends paragraphs detailing the harbor's tides and moon phases, which feels excessive, but I included a short note about it anyway.
+
+[Example response]
+Questions: The sentence comments on how the summary was composed instead of reporting events.
+Types: writing process, other meta
+
+---
+
+[Your summary]
+
+{}
+
+
+[Your sentence]
+
+{}
+
+
+[Your response] Identify whether the sentence above contains meta commentary unrelated to summarizing the source material. If it does, provide a short explanation and at least one applicable type. If it does not, reply with "no meta issues" for both the Questions and Types fields.

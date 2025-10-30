@@ -25,7 +25,9 @@ class Scorer():
         template_path,
         v2=False,
         batch_size=10,
-        base_url=None
+        base_url=None,
+        labels=None,
+        no_issue_token="no confusion"
     ):
         self.client = APIClient(api, api_key, model, base_url=base_url)
         self.summ_path = summ_path
@@ -33,7 +35,9 @@ class Scorer():
         self.template_path = template_path
         self.v2 = v2
         self.batch_size = batch_size
-        self.all_labels = ['entity omission', 'event omission', 'causal omission', 'salience', 'discontinuity', 'duplication', 'inconsistency', 'language']
+        default_labels = ['entity omission', 'event omission', 'causal omission', 'salience', 'discontinuity', 'duplication', 'inconsistency', 'language']
+        self.all_labels = [label.lower() for label in (labels or default_labels)]
+        self.no_issue_token = no_issue_token.lower()
 
     def validate_response(self, response):
         lines = response.split('\n')
@@ -61,9 +65,12 @@ class Scorer():
         if not types:
             return False, None, None, "types field is empty"
 
-        if "no confusion" in questions:
-            if "no confusion" not in types:
-                return False, None, None, "no confusion mismatch between questions and types"
+        questions_lower = questions.lower()
+        types_lower = types.lower()
+
+        if self.no_issue_token in questions_lower:
+            if self.no_issue_token not in types_lower:
+                return False, None, None, f"{self.no_issue_token} mismatch between questions and types"
             return True, None, None, None
 
         types_list = [t.strip() for t in types.split(',') if t.strip()]

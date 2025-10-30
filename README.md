@@ -185,6 +185,31 @@ python -m booookscore.score --summ_path summaries/chatgpt-2048-hier-cleaned.json
     --api_key sk-abc123 --v2 --batch_size 10
 ```
 
+## Audit summaries for meta commentary
+
+Use the meta commentary auditor when you want to quantify how often a summary drifts into self-referential narration (e.g., comments about word counts, stylistic plans, or plot speculation). The CLI mirrors the BooookScore workflow but relies on a different prompt and a lightweight label set tailored to meta content.
+
+```
+python -m booookscore.meta_score --summ_path {summ_path} --annot_path {annot_path}
+    --model {model} --api {api} --api_key {api_key}
+    [--base_url {base_url}] [--template_path {template_path}]
+```
+
+- `--summ_path`: JSON mapping of book names to final summaries.
+- `--annot_path`: where the meta commentary annotations should be stored.
+- `--template_path` (optional): override the default meta commentary prompt (`prompts/get_meta_annotations.txt`).
+- `--v2` / `--batch_size`: behave the same as in `booookscore.score` and enable batched annotations.
+
+The evaluator labels meta commentary with the following categories:
+- **writing process** – the model reflects on how it is crafting the summary.
+- **formatting/meta** – the model discusses structure, sections, or formatting choices.
+- **plot speculation** – the model predicts or analyzes story directions instead of reporting events.
+- **other meta** – any additional meta-level commentary unrelated to the source text.
+
+The CLI prints two aggregates:
+- `MetaContentScore`: share of sentences that remain focused on the book (higher is better).
+- `MetaContentRate`: fraction of sentences flagged as meta commentary.
+
 # ✅ TODO's for future versions
 
 - Rework the data structure used for hierarchical summaries, it would be best to maintain a mapping between summaries that are one level apart.
