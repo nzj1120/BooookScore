@@ -233,7 +233,16 @@ python -m align_eval.cli \
 The command writes a detailed JSON report (global metrics + per-sentence diagnostics) and prints macro averages across all evaluated books. For API usage or customization options, see [align_eval/README.md](align_eval/README.md).
 
 > **Using an offline/local BERT**
-> If you've already downloaded a Chinese BERT checkpoint, pass its directory to `--model_name` (for example `--model_name /models/chinese-bert-wwm-ext`). The folder should contain files such as `config.json`, `pytorch_model.bin`, and `vocab.txt`; `transformers` will load them directly without reaching out to Hugging Face.
+> If you've already downloaded a Chinese BERT checkpoint, point `--model_name` to that folder. For example, if the weights live next to your run script you can execute:
+> ```bash
+> HF_HUB_OFFLINE=1 \
+> python -m align_eval.cli \
+>   --source_path data/original.json \
+>   --summary_path summaries/my_summary.json \
+>   --output_path reports/align_eval.json \
+>   --model_name ./chinese-bert-wwm-ext
+> ```
+> The directory must include files such as `config.json`, `pytorch_model.bin`, and `vocab.txt`. Setting `HF_HUB_OFFLINE=1` is optional but ensures `transformers` stays offline when corporate mirrors or proxies break TLS handshakes.
 
 # ✅ TODO's for future versions
 
