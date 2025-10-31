@@ -2,9 +2,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 import numpy as np
+from tqdm.auto import tqdm
 
 from .aligner import AlignmentConfig, align
 from .encoder_bert import BertSentenceEncoder, EncoderConfig, normalize_embeddings
@@ -137,16 +138,29 @@ def evaluate_alignment(
     return report, global_metrics
 
 
+def _progress_iter(
+    items: Iterable[Tuple[str, str]],
+    total: int,
+    enabled: bool,
+) -> Iterator[Tuple[str, str]]:
+    if not enabled:
+        yield from items
+        return
+    yield from tqdm(items, total=total, desc="Evaluating summaries")
+
+
 def evaluate_corpus(
     source_map: Dict[str, str],
     summary_map: Dict[str, str],
     config: EvaluationConfig,
+    show_progress: bool = False,
 ) -> Tuple[Dict[str, BookReport], Dict[str, float]]:
     encoder = BertSentenceEncoder(config.encoder)
     reports: Dict[str, BookReport] = {}
     metrics_total: Dict[str, float] = {}
     count = 0
-    for book_id, summary_text in summary_map.items():
+    valid_items = [(bid, summary_map[bid]) for bid in summary_map if bid in source_map]
+    for book_id, summary_text in _progress_iter(valid_items, len(valid_items), show_progress):
         if book_id not in source_map:
             continue
         source_text = source_map[book_id]

@@ -86,7 +86,9 @@ def main(args: argparse.Namespace | None = None) -> Dict[str, float]:
     metric_accumulator: Dict[str, float] = {}
     count = 0
 
-    for book_id, summary_text in summary_data.items():
+    iterator = summary_data.items()
+    iterator = tqdm(iterator, total=len(summary_data), desc="Evaluating summaries")
+    for book_id, summary_text in iterator:
         source_text = source_data[book_id]
         report, metrics = evaluate_alignment(book_id, source_text, summary_text, eval_cfg, encoder=encoder)
         book_reports[book_id] = report
