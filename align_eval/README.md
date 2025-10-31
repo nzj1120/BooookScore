@@ -7,6 +7,80 @@ AlignEval 是一个用于评估“书籍缩写是否忠于原著”的命令行�
 - **PFS (Position Fidelity Score)**：位置信度幂次映射
 - **SCS (Stitching Compactness Score)**：句级拼接紧凑度（Top-K=3）
 
+## 指标公式
+
+假设摘要共有 \(M\) 句 \(s_i\)，原文共有 \(N\) 句 \(x_j\)。句向量相似度矩阵记为 \(\mathrm{sim}(s_i, x_j)\)。
+
+### Coverage（覆盖率）
+
+\[
+t_i = \max_j \mathrm{sim}(s_i, x_j), \qquad \mathrm{TH} = \frac{1}{M} \sum_{i=1}^{M} t_i
+\]
+
+Coverage 使用动态阈值 \(\mathrm{TH}\)：
+
+\[
+\mathrm{Coverage} = \frac{1}{M} \sum_{i=1}^{M} \mathbf{1}[t_i \ge \mathrm{TH}]
+\]
+
+### Alignment Confidence（对齐置信度）
+
+对齐算法返回的路径为句对集合 \(\{(i, j_i)\}\)。对齐置信度是这些句对的平均相似度：
+
+\[
+\mathrm{Alignment\ Confidence} = \frac{1}{|\mathcal{P}|} \sum_{(i, j_i) \in \mathcal{P}} \mathrm{sim}(s_i, x_{j_i})
+\]
+
+### PFS（Position Fidelity Score）
+
+对齐句对 \((i, j_i)\) 的归一化位置为
+
+\[
+u_i = \frac{i + 0.5}{M}, \qquad v_i = \frac{j_i + 0.5}{N}, \qquad d_i = |u_i - v_i|
+\]
+
+权重取相似度下界 \(\epsilon\)：
+
+\[
+w_i = \max(\mathrm{sim}(s_i, x_{j_i}), \epsilon), \qquad \bar{D} = \frac{\sum_i w_i d_i}{\sum_i w_i}
+\]
+
+幂次映射得到
+
+\[
+\mathrm{PFS} = (1 - \bar{D})^{\gamma}
+\]
+
+其中 \(\gamma\) 由 `--pfs_gamma` 控制（默认 3.0）。
+
+### SCS（Stitching Compactness Score，Top-K=3）
+
+对每个摘要句选择原文中相似度最高的三句，记索引为 \(j_{ik}\)，相似度为 \(s_{ik}\)。归一化位置：
+
+\[
+x_{ik} = \frac{j_{ik} + 0.5}{N}
+\]
+
+Softmax 权重：
+
+\[
+p_{ik} = \frac{\exp(\alpha s_{ik})}{\sum_{r=1}^{3} \exp(\alpha s_{ir})}
+\]
+
+加权均值与方差：
+
+\[
+\mu_i = \sum_{k=1}^{3} p_{ik} x_{ik}, \qquad \sigma_i^2 = \sum_{k=1}^{3} p_{ik} (x_{ik} - \mu_i)^2
+\]
+
+风险值与逐句得分：
+
+\[
+r_i = \mathrm{clip}\!\left(\frac{\sigma_i^2}{\beta}, 0, 1\right), \qquad \mathrm{SCS}_i = 1 - r_i
+\]
+
+全局 SCS 是所有 \(\mathrm{SCS}_i\) 的均值。参数 \(\alpha\)、\(\beta\) 分别对应 `--alpha`、`--scs_beta`。
+
 ## 安装依赖
 
 项目根目录已包含所需依赖（`transformers`, `torch`, `numpy`, `tqdm` 等）。若在独立环境中使用，请确保已安装：
