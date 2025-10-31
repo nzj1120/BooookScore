@@ -42,6 +42,20 @@ python -m align_eval.cli \
 
 命令会输出指标摘要，并将详细 JSON 报告写入 `--output_path`。
 
+## 使用本地已下载的中文 BERT
+
+如果你已经在本地下载好了中文 BERT 权重（例如通过 `git clone https://huggingface.co/hfl/chinese-bert-wwm-ext`），只需在运行时把模型目录传给 `--model_name` 即可：
+
+```bash
+python -m align_eval.cli \
+  --source_path data/original.json \
+  --summary_path summaries/my_summary.json \
+  --output_path reports/result.json \
+  --model_name /path/to/chinese-bert-wwm-ext
+```
+
+目录需要包含 `config.json`、`pytorch_model.bin`、`vocab.txt` 等文件，`transformers` 会直接从该路径加载，不会再访问网络。若希望集中存放权重，也可以设置 `TRANSFORMERS_CACHE` 环境变量或在配置里传入其它本地模型目录。
+
 ## Python API
 
 ```python

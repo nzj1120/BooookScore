@@ -232,6 +232,9 @@ python -m align_eval.cli \
 
 The command writes a detailed JSON report (global metrics + per-sentence diagnostics) and prints macro averages across all evaluated books. For API usage or customization options, see [align_eval/README.md](align_eval/README.md).
 
+> **Using an offline/local BERT**
+> If you've already downloaded a Chinese BERT checkpoint, pass its directory to `--model_name` (for example `--model_name /models/chinese-bert-wwm-ext`). The folder should contain files such as `config.json`, `pytorch_model.bin`, and `vocab.txt`; `transformers` will load them directly without reaching out to Hugging Face.
+
 # ✅ TODO's for future versions
 
 - Rework the data structure used for hierarchical summaries, it would be best to maintain a mapping between summaries that are one level apart.
