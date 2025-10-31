@@ -114,7 +114,7 @@ python -m align_eval.cli \
   --scs_beta 0.1
 ```
 
-命令会输出指标摘要，并将详细 JSON 报告写入 `--output_path`。执行过程中会显示“Evaluating summaries”进度条，方便在大批量书目上查看处理进度。
+命令会输出指标摘要，并将详细 JSON 报告写入 `--output_path`。
 
 ## 使用本地已下载的中文 BERT
 
