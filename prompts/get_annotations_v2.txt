@@ -1,4 +1,4 @@
-Given a book summary and sentences from that summary, determine if those sentences cause any confusion. Types of confusion include the following:
+Given a book summary and sentences from that summary, determine if those sentences cause any confusion. Each entry you receive will list a target sentence alongside a short block of neighboring context sentences—use that information when making your decision. Types of confusion include the following:
 
 - Entity omission: an entity, real or abstract (person, object, place, concept, etc.) is mentioned, but key details are missing or unclear
 - Event omission: an event is mentioned, but key details are missing or unclear
@@ -14,9 +14,9 @@ For something to qualify as a confusion, it must meet these two conditions:
 1. Without resolving the confusion, readers would struggle substantially to grasp the main narrative, or the summary would appear incoherent.
 2. The confusion can't be resolved solely using the information provided in the summary.
 
-If the given sentences involve confusion that meets these two qualifications, ask relevant clarifying questions and provide the confusion types. There can be multiple questions, and keep in mind that a sentence may involve multiple types of confusion. If the given sentences do not involve any confusion, simply put null as questions and types. Some examples are provided below, followed by the summary and sentences that you need to annotate.
+If the given sentences involve confusion that meets these two qualifications, ask relevant clarifying questions and provide the confusion types. If a context block contains '- (no additional context provided)', treat it as indicating that no extra context is available beyond the sentence itself. There can be multiple questions, and keep in mind that a sentence may involve multiple types of confusion. If the given sentences do not involve any confusion, simply put null as questions and types. Some examples are provided below, followed by the summary and sentences that you need to annotate.
 
-Answer with a JSON list as in examples below.
+Answer with a JSON list as in examples below. Each item will include the sentence text and a "Context" section; read that context carefully before deciding. If a context block contains "- (no additional context provided)", treat it as indicating that no extra context is available beyond the sentence itself.
 
 ---
 
@@ -357,8 +357,8 @@ Proctor's life continues as he navigates the challenges of his new role as an ac
 {summary}
 
 
-[Your sentences]
+[Sentences with context blocks]
 {sentences}
 
 
-[Your responses] Determine if the sentences above involve confusion that can't be clarified using information from any part of the given summary, and those which, if left unresolved, would make the summary highly incoherent or significantly hinder readers from understanding the main storyline. If you don't identify any confusion like that, simply say place null for both questions and types in your response.
+[Your responses] Determine whether each sentence above involves confusion that cannot be resolved using information from any part of the given summary (including the provided context blocks). If you do not identify such confusion, output null for both the questions and types fields for that sentence.

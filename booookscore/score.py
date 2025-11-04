@@ -24,55 +24,66 @@ class Scorer():
         annot_path,
         template_path,
         v2=False,
-        batch_size=10
+        batch_size=10,
+        base_url=None,
+        labels=None,
+        no_issue_token="no confusion",
+        context_window=0,
     ):
-        self.client = APIClient(api, api_key, model)
+        self.client = APIClient(api, api_key, model, base_url=base_url)
         self.summ_path = summ_path
         self.annot_path = annot_path
         self.template_path = template_path
         self.v2 = v2
         self.batch_size = batch_size
-        self.all_labels = ['entity omission', 'event omission', 'causal omission', 'salience', 'discontinuity', 'duplication', 'inconsistency', 'language']
+        default_labels = ['entity omission', 'event omission', 'causal omission', 'salience', 'discontinuity', 'duplication', 'inconsistency', 'language']
+        self.all_labels = [label.lower() for label in (labels or default_labels)]
+        self.no_issue_token = no_issue_token.lower()
+        self.context_window = context_window
 
     def validate_response(self, response):
         lines = response.split('\n')
         if len(lines) < 2:
-            print("Number of lines is less than 2")
-            return False, [], []
-        
+            return False, None, None, "number of lines is less than 2"
+
         # only keep the lines with questions and types
-        lines = [line for line in lines if "Questions: " in line or "Types: " in line]
-        
-        questions_pos = lines[0].find("Questions: ")
-        types_pos = -1
-        types_pos = lines[1].find("Types: ")
+        filtered = [line for line in lines if "Questions: " in line or "Types: " in line]
+
+        if len(filtered) < 2:
+            return False, None, None, "questions or types line missing"
+
+        questions_pos = filtered[0].find("Questions: ")
+        types_pos = filtered[1].find("Types: ")
 
         if questions_pos == -1 or types_pos == -1:
-            print("Questions or types not found")
-            return False, [], []
-        
-        questions = lines[0][questions_pos + len("Questions: "):].strip()
-        types = lines[1][types_pos + len("Types: "):].strip()
-        types = types.lower()
+            return False, None, None, "questions or types label not found"
 
-        if "no confusion" in questions:
-            if "no confusion" not in types:
-                print("No confusion in questions but not in types")
-                return False, [], []
-            else:
-                return True, None, None
+        questions = filtered[0][questions_pos + len("Questions: "):].strip()
+        types = filtered[1][types_pos + len("Types: "):].strip().lower()
 
-        if types is not None:
-            types = types.split(', ')
-            for t in types:
-                if t.lower() not in self.all_labels:
-                    print(f"Invalid type: {t}")
-                    return False, [], []
-        
-        if questions is not None and types is None:
-            raise ValueError("Questions is not None but types is None")
+        if not questions:
+            return False, None, None, "questions field is empty"
 
-        return True, questions, types
+        if not types:
+            return False, None, None, "types field is empty"
+
+        questions_lower = questions.lower()
+        types_lower = types.lower()
+
+        if self.no_issue_token in questions_lower:
+            if self.no_issue_token not in types_lower:
+                return False, None, None, f"{self.no_issue_token} mismatch between questions and types"
+            return True, None, None, None
+
+        types_list = [t.strip() for t in types.split(',') if t.strip()]
+        if not types_list:
+            return False, None, None, "types list is empty"
+
+        for t in types_list:
+            if t.lower() not in self.all_labels:
+                return False, None, None, f"invalid type: {t}"
+
+        return True, questions, types_list, None
 
     def gen_batch(self, records: List[Any], batch_size: int):
         batch_start = 0
@@ -88,8 +99,22 @@ class Scorer():
         answers = json.loads(response[start_index:end_index])
         return answers
 
-    def calc_instance(self, summary, sentences, template, num_retries, model_name):
-        formatted_batch = "\n".join([f"{n+1}. {s}" for n, s in enumerate(sentences)])
+    def calc_instance(self, summary, sentences, template, num_retries, model_name, contexts=None):
+        if contexts is None:
+            contexts = [[] for _ in sentences]
+
+        formatted_entries = []
+        for n, (sentence, context_lines) in enumerate(zip(sentences, contexts)):
+            if context_lines:
+                context_block = "\n".join(f"     - {c}" for c in context_lines)
+            else:
+                context_block = "     - (no additional context provided)"
+            entry = (
+                f"{n+1}. Sentence: {sentence}\n"
+                f"   Context:\n{context_block}"
+            )
+            formatted_entries.append(entry)
+        formatted_batch = "\n".join(formatted_entries)
         prompt = template.format(summary=summary, sentences=formatted_batch)
         for _ in range(num_retries):
             try:
@@ -111,47 +136,78 @@ class Scorer():
                     sentence = answer.pop("sentence")
                     cache[book][sentence] = answer
                 cache_temp_path = cache_path + ".tmp"
-                with open(cache_temp_path, "w") as w:
-                    json.dump(cache, w)
+                with open(cache_temp_path, "w", encoding="utf-8") as w:
+                    json.dump(cache, w, ensure_ascii=False)
                 shutil.move(cache_temp_path, cache_path)
         return on_result
 
     def get_annot(self, num_retries=3):
         assert self.summ_path and os.path.exists(self.summ_path), f"Summaries path {self.summ_path} does not exist"
-        summaries = json.load(open(self.summ_path, 'r'))
+        with open(self.summ_path, 'r', encoding='utf-8') as f:
+            summaries = json.load(f)
         annots = defaultdict(dict)
         if os.path.exists(self.annot_path):
-            annots = json.load(open(self.annot_path, 'r'))
+            with open(self.annot_path, 'r', encoding='utf-8') as f:
+                annots = json.load(f)
             annots = defaultdict(dict, annots)
             print(f"LOADED {len(annots)} annots FROM {self.annot_path}")
 
-        with open(template_path, 'r') as f:
+        with open(self.template_path, 'r', encoding='utf-8') as f:
             template = f.read()
         
         for book, summary in tqdm(summaries.items(), total=len(summaries), desc="Iterating over summaries"):
             if book in annots:
                 print(f"Skipping {book}")
-            
+
             sentences = sent_tokenize(summary)
+            context_lookup = {}
+            for idx, sentence in enumerate(sentences):
+                start = max(0, idx - self.context_window)
+                end = min(len(sentences), idx + self.context_window + 1)
+                neighbors = [sentences[j] for j in range(start, end) if j != idx]
+                context_lookup[sentence] = neighbors
 
             if not self.v2:
                 for i, sentence in tqdm(enumerate(sentences), total=len(sentences), desc="Iterating over sentences"):
-                    prompt = template.format(summary, sentence)
+                    context_lines = context_lookup.get(sentence, [])
+                    if context_lines:
+                        context_text = "\n".join(f"- {c}" for c in context_lines)
+                    else:
+                        context_text = "- (no additional context provided)"
+                    prompt = template.format(summary, context_text, sentence)
                     response = self.client.obtain_response(prompt, max_tokens=100, temperature=0)
-                    valid, questions, types = self.validate_response(response)
+                    valid, questions, types, error = self.validate_response(response)
+                    retry_count = 0
                     while not valid:
-                        response = self.client.obtain_response(prompt, max_tokens=max_len, temperature=0)
-                        valid, questions, types = self.validate_response(response)
+                        retry_count += 1
+                        print(
+                            f"Invalid response (attempt {retry_count}) for sentence: {error}\n"
+                            f"Response: {response}"
+                        )
+                        if retry_count >= 5:
+                            raise RuntimeError("Exceeded maximum retries when validating response")
+                        response = self.client.obtain_response(prompt, max_tokens=100, temperature=0)
+                        valid, questions, types, error = self.validate_response(response)
                     annots[book][sentence] = {
                         'questions': questions,
                         'types': types
                     }
             else:
                 sentences = [s for s in sentences if s not in annots[book]]
+                if not sentences:
+                    continue
+                contexts = [context_lookup.get(s, []) for s in sentences]
                 lock = Lock()
-                batches = list(self.gen_batch(sentences, self.batch_size))
+                batches = []
+                for batch_indices in self.gen_batch(list(range(len(sentences))), self.batch_size):
+                    batch_sentences = [sentences[idx] for idx in batch_indices]
+                    batch_contexts = None
+                    if contexts is not None:
+                        batch_contexts = [contexts[idx] for idx in batch_indices]
+                    batches.append((batch_sentences, batch_contexts))
                 tasks = [
-                    (summary, batch, template, num_retries, self.client.model) for batch in batches
+                    (summary, batch_sentences, template, num_retries, self.client.model, batch_contexts)
+                    for batch_sentences, batch_contexts in batches
                 ]
                 with ThreadPool(2) as pool:
                     callback = self.create_callback(book, annots, self.annot_path, lock)
@@ -161,14 +217,15 @@ class Scorer():
                     ]
                     results = [result.get() for result in results]
             
-            with open(self.annot_path, 'w') as f:
-                json.dump(annots, f)
+            with open(self.annot_path, 'w', encoding='utf-8') as f:
+                json.dump(annots, f, ensure_ascii=False)
 
     def get_score(self):
         if not os.path.exists(self.annot_path):
             print("No annotations found, getting annotations...")
             self.get_annot()
-        annots = json.load(open(self.annot_path, 'r'))
+        with open(self.annot_path, 'r', encoding='utf-8') as f:
+            annots = json.load(f)
         annots = defaultdict(dict, annots)
         annots = {k: v for k, v in sorted(annots.items(), key=lambda item: item[0])}
         scores = dict()
@@ -187,10 +244,17 @@ if __name__ == "__main__":
     parser.add_argument("--summ_path", type=str, help="must set if you don't have annotations yet")
     parser.add_argument("--annot_path", type=str, help="path to save annotations to")
     parser.add_argument("--api", type=str, help="api to use", choices=["openai", "anthropic", "together"])
-    parser.add_argument("--api_key", type=str, help="path to a txt file storing your OpenAI api key")
+    parser.add_argument("--api_key", type=str, help="API key string or path to a txt file storing it")
+    parser.add_argument("--base_url", type=str, default=None, help="optional base url for OpenAI-compatible endpoints")
     parser.add_argument("--model", type=str, default="gpt-4", help="evaluator model")
     parser.add_argument("--v2", action="store_true", help="use v2, which batches sentences during annotation (this setup was not used in the paper)")
     parser.add_argument("--batch_size", type=int, help="batch size if v2 is used")
+    parser.add_argument(
+        "--context_window",
+        type=int,
+        default=0,
+        help="number of neighboring sentences to provide as context for each judgment",
+    )
     args = parser.parse_args()
 
     if args.v2:
@@ -201,11 +265,13 @@ if __name__ == "__main__":
         model=args.model,
         api=args.api,
         api_key=args.api_key,
+        base_url=args.base_url,
         summ_path=args.summ_path,
         annot_path=args.annot_path,
         template_path=template_path,
         v2=args.v2,
-        batch_size=args.batch_size
+        batch_size=args.batch_size,
+        context_window=args.context_window,
     )
     score = scorer.get_score()
     print(f"BooookScore = {score}")

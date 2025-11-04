@@ -1,0 +1,99 @@
+Important guardrail: the presence of "I" or "we" does not, by itself, indicate meta commentary. Only flag a sentence when the first-person language clearly points to the summarizer or the current output (e.g., mentions of this summary, upcoming sections, readers, formatting, or word counts). If the first-person voice belongs to a character or narrator recounting story events, treat it as normal summary content.
+
+You will receive the full summary, a short block listing nearby context sentences, and the target sentence. Use all of that information before deciding. If the context block contains "- (no additional context provided)", treat it as indicating that there were no extra neighboring sentences to surface.
+
+Given this information, determine whether the sentence drifts into meta commentary that is unrelated to conveying the story itself. Meta commentary includes discussions of the writing process, formatting or document structure, or speculation from the summarizer about future plot developments, rather than retelling concrete events from the source text.
+
+Flag a sentence only when both conditions hold:
+1. The sentence focuses on the summarizer's or model's internal thoughts, writing plans, formatting choices, or out-of-text speculation instead of stating facts from the source material.
+2. Removing the sentence would make the summary cleaner and more faithful to the source material.
+
+Decision checklist (apply in order):
+1. Hard clues: if the sentence explicitly references the summary, writing strategy, readers, structure, sections, bullet lists, or word/length management, treat it as meta commentary.
+2. First-person attribution: if first-person language clearly refers to the summarizer/output (and is backed by the hard clues above), favor a meta classification. If it refers to an in-story narrator or character describing events, do not flag it.
+3. Speculation attribution: if predictions or analysis come from the summarizer (e.g., guesses about sequels or author intent outside the text), classify as plot speculation. If the speculation belongs to characters within the story, do not flag it.
+
+When uncertain, default to a lenient judgment and output "no meta issues".
+
+If the sentence is meta commentary, provide a brief explanation (it can be declarative) and assign one or more of these labels:
+- Writing process: statements about writing plans, tone adjustments, progress tracking, or word/length control.
+- Formatting/meta: mentions of outlines, headings, bullet points, document sections, or structural instructions.
+- Plot speculation: predictions or interpretations about future story developments beyond the provided text.
+- Other meta: any remaining meta-level reflection unrelated to the actual storyline.
+
+Respond using the format below. When you detect meta commentary, write an explanatory note in the "Questions" field and list the applicable labels in the "Types" field (comma separated). If the sentence is legitimate summary content, output "no meta issues" for both fields.
+
+Some examples are provided below, followed by the summary, context block, and sentence you must annotate.
+
+---
+
+[Example summary]
+The novel follows detective Mira Lane as she investigates a series of disappearances in a coastal town. She discovers a smuggling ring operating through the harbor and collaborates with the reluctant town sheriff. After uncovering evidence of corruption, Mira orchestrates a sting operation that rescues the missing residents and brings the ringleaders to justice.
+
+[Example sentence]
+I'll aim to keep this summary under 400 words so it stays concise for the reader.
+
+[Example response]
+Questions: This sentence discusses the author's writing plan rather than plot details.
+Types: writing process
+
+[Example sentence]
+The resolution foreshadows that Mira may leave policing entirely, which could be explored in a sequel if the author chooses to continue her story.
+
+[Example response]
+Questions: The sentence speculates about future narrative possibilities beyond the novel's actual events.
+Types: plot speculation
+
+[Example sentence]
+She spends paragraphs detailing the harbor's tides and moon phases, which feels excessive, but I included a short note about it anyway.
+
+[Example response]
+Questions: The sentence comments on how the summary was composed instead of reporting events.
+Types: writing process, other meta
+
+[Example sentence]
+I saw the final signal flare from the lighthouse and knew the rescue had begun.
+
+[Example response]
+Questions: no meta issues
+Types: no meta issues
+
+[Example sentence]
+I plan to outline the main characters first before moving into the thematic discussion in the next section.
+
+[Example response]
+Questions: The sentence lays out the writer's plan for structuring the summary, not the story.
+Types: writing process, formatting/meta
+
+[Example sentence]
+I will keep following this style so the summary remains easy for readers to digest.
+
+[Example response]
+Questions: The sentence talks about stylistic choices for the summary rather than the narrative.
+Types: writing process
+
+[Example sentence]
+I suspected the gardener was lying, so I followed him through the hedge maze to uncover the truth.
+
+[Example response]
+Questions: no meta issues
+Types: no meta issues
+
+---
+
+[Your summary]
+
+{0}
+
+
+[Neighboring context sentences]
+
+{1}
+
+
+[Your sentence]
+
+{2}
+
+
+[Your response] Identify whether the sentence above contains meta commentary unrelated to summarizing the source material. If it does, provide a short explanation and at least one applicable type. If it does not, reply with "no meta issues" for both the Questions and Types fields.
