@@ -1,0 +1,22 @@
+You are validating whether a proposed answer is supported by the provided context.
+
+Given the QUESTION, EXPECTED_ANSWER, and CONTEXT below, determine if the context contains sufficient evidence to accept the expected answer. If the context contradicts it or lacks the information, mark it incorrect.
+
+Return a JSON object with the following fields:
+  {
+    "verdict": "correct" or "incorrect",
+    "justification": "short explanation referencing the context",
+    "answer_from_context": "your best direct answer based on the context (empty string if no answer)"
+  }
+Do not output anything other than this JSON object.
+
+QUESTION:
+{question}
+
+EXPECTED_ANSWER:
+{answer}
+
+CONTEXT:
+"""
+{context}
+"""

@@ -1,0 +1,19 @@
+You are assisting with faithfulness evaluation for book summaries.
+
+TASK: Given the provided {text_type} text, write {question_count} distinct question-and-answer pairs that can be answered using ONLY the text.
+
+REQUIREMENTS:
+- Focus on concrete facts (events, motivations, outcomes, settings, relationships, etc.).
+- Avoid meta commentary about writing or formatting.
+- Answers must be short factual spans taken or easily inferred from the text.
+- Cover diverse parts of the passage so the questions are well distributed.
+
+OUTPUT FORMAT:
+Return a JSON array. Each element must be an object with exactly two fields:
+  {{"question": <string>, "answer": <string>}}
+Do not include any extra commentary outside the JSON.
+
+TEXT:
+"""
+{text}
+"""
