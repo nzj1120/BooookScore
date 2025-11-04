@@ -46,8 +46,13 @@ def evaluate_alignment(
     source_sentences = BertSentenceEncoder.split_sentences(source_text)
     summary_sentences = BertSentenceEncoder.split_sentences(summary_text)
 
-    source_emb = normalize_embeddings(own_encoder.encode(source_sentences))
-    summary_emb = normalize_embeddings(own_encoder.encode(summary_sentences))
+    source_encoded = own_encoder.encode(source_sentences, return_token_counts=True)
+    summary_encoded = own_encoder.encode(summary_sentences, return_token_counts=True)
+
+    source_emb, source_tokens = source_encoded
+    summary_emb, summary_tokens = summary_encoded
+    source_emb = normalize_embeddings(source_emb)
+    summary_emb = normalize_embeddings(summary_emb)
 
     sim_matrix = compute_similarity_matrix(summary_emb, source_emb)
     if sim_matrix.size and sim_matrix.shape[1] > 0:
@@ -128,6 +133,8 @@ def evaluate_alignment(
         "scs": scs,
         "summary_sentence_count": float(len(summary_sentences)),
         "source_sentence_count": float(len(source_sentences)),
+        "summary_token_count": float(summary_tokens),
+        "source_token_count": float(source_tokens),
     }
     report = BookReport(
         book_id=book_id,

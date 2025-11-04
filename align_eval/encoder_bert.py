@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from typing import List, Sequence
+from typing import List, Sequence, Tuple
 
 import numpy as np
 import torch
@@ -43,12 +43,16 @@ class BertSentenceEncoder:
         parts = _SENTENCE_REGEX.findall(text)
         return [part.strip() for part in parts if part and part.strip()]
 
-    def encode(self, sentences: Sequence[str]) -> np.ndarray:
+    def encode(
+        self, sentences: Sequence[str], *, return_token_counts: bool = False
+    ) -> np.ndarray | Tuple[np.ndarray, int]:
         if not sentences:
-            return np.zeros((0, self.model.config.hidden_size), dtype=np.float32)
+            empty = np.zeros((0, self.model.config.hidden_size), dtype=np.float32)
+            return (empty, 0) if return_token_counts else empty
         outputs: List[np.ndarray] = []
         batch_size = max(1, self.config.batch_size)
         pooling = self.config.pooling.lower()
+        total_tokens = 0
         with torch.no_grad():
             for start in range(0, len(sentences), batch_size):
                 batch = sentences[start : start + batch_size]
@@ -62,7 +66,9 @@ class BertSentenceEncoder:
                 encoded = {k: v.to(self.device) for k, v in encoded.items()}
                 model_out = self.model(**encoded)
                 hidden_states = model_out.last_hidden_state  # (batch, seq, hidden)
-                attention_mask = encoded["attention_mask"].unsqueeze(-1)
+                attention_mask = encoded["attention_mask"]
+                total_tokens += int(attention_mask.sum().item())
+                attention_mask = attention_mask.unsqueeze(-1)
                 if pooling == "cls":
                     pooled = hidden_states[:, 0]
                 else:
@@ -71,7 +77,10 @@ class BertSentenceEncoder:
                     counts = attention_mask.sum(dim=1).clamp(min=1)
                     pooled = summed / counts
                 outputs.append(pooled.cpu().numpy())
-        return np.vstack(outputs)
+        embeddings = np.vstack(outputs)
+        if return_token_counts:
+            return embeddings, total_tokens
+        return embeddings
 
 
 def normalize_embeddings(embeddings: np.ndarray) -> np.ndarray:

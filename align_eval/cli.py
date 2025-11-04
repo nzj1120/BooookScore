@@ -5,6 +5,8 @@ import argparse
 import json
 from typing import Dict
 
+from tqdm.auto import tqdm
+
 from .aligner import AlignmentConfig
 from .encoder_bert import EncoderConfig, BertSentenceEncoder
 from .eval import EvaluationConfig, evaluate_alignment
