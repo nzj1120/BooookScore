@@ -230,7 +230,7 @@ python -m align_eval.cli \
   --scs_beta 0.1
 ```
 
-The command writes a detailed JSON report (global metrics + per-sentence diagnostics) and prints macro averages across all evaluated books. Each book entry also records the sentence counts and tokenizer-level token totals for both the source text and the summary, so you can gauge corpus length and potential truncation. For API usage or customization options, see [align_eval/README.md](align_eval/README.md).
+The command writes a detailed JSON report (global metrics + per-sentence diagnostics) and prints macro averages across all evaluated books. For API usage or customization options, see [align_eval/README.md](align_eval/README.md).
 
 > **Using an offline/local BERT**
 > If you've already downloaded a Chinese BERT checkpoint, point `--model_name` to that folder. For example, if the weights live next to your run script you can execute:

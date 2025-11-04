@@ -7,8 +7,6 @@ AlignEval 是一个用于评估“书籍缩写是否忠于原著”的命令行�
 - **PFS (Position Fidelity Score)**：位置信度幂次映射
 - **SCS (Stitching Compactness Score)**：句级拼接紧凑度（Top-K=3）
 
-除此之外，报告还会给出原文与摘要的句子数量以及 BERT tokenizer 统计得到的 token 数，便于了解文本规模和截断风险。
-
 ## 指标公式
 
 假设摘要共有 \(M\) 句 \(s_i\)，原文共有 \(N\) 句 \(x_j\)。句向量相似度矩阵记为 \(\mathrm{sim}(s_i, x_j)\)。
