@@ -196,6 +196,57 @@ python -m booookscore.meta_score --summ_path {summ_path} --annot_path {annot_pat
     --model {model} --api {api} --api_key {api_key}
     [--base_url {base_url}] [--template_path {template_path}] [--context_window {context_window}]
 ```
+python -m booookscore.meta_score --summ_path {summ_path} --annot_path {annot_path}
+    --model {model} --api {api} --api_key {api_key}
+    [--base_url {base_url}] [--template_path {template_path}] [--context_window {context_window}]
+```
+
+- `--summ_path`: JSON mapping of book names to final summaries.
+- `--annot_path`: where the meta commentary annotations should be stored.
+- `--template_path` (optional): override the default meta commentary prompt (`prompts/get_meta_annotations.txt`).
+- `--context_window` (optional): number of neighboring sentences to surface for each judgment (defaults to 2).
+- `--v2` / `--batch_size`: behave the same as in `booookscore.score` and enable batched annotations.
+
+The evaluator labels meta commentary with the following categories:
+- **writing process** – the model reflects on how it is crafting the summary.
+- **formatting/meta** – the model discusses structure, sections, or formatting choices.
+- **plot speculation** – the model predicts or analyzes story directions instead of reporting events.
+- **other meta** – any additional meta-level commentary unrelated to the source text.
+
+The CLI prints two aggregates:
+- `MetaContentScore`: share of sentences that remain focused on the book (higher is better).
+- `MetaContentRate`: fraction of sentences flagged as meta commentary.
+
+## Evaluate summary faithfulness with AlignEval
+
+If you want a lightweight, local metric suite without prompting LLMs, the `align_eval/` package offers four statistics computed from Chinese BERT sentence embeddings and monotonic alignments: Coverage, Alignment Confidence, PFS, and SCS. It consumes the same JSON format as BooookScore (book → text) for both the source material and the generated summaries.
+
+```bash
+python -m align_eval.cli \
+  --source_path data/original.json \
+  --summary_path summaries/my_summary.json \
+  --output_path reports/align_eval.json \
+  --model_name hfl/chinese-bert-wwm-ext \
+  --alignment nw \
+  --bandwidth 4 \
+  --pfs_gamma 3.0 \
+  --alpha 10 \
+  --scs_beta 0.1
+```
+
+The command writes a detailed JSON report (global metrics + per-sentence diagnostics) and prints macro averages across all evaluated books. For API usage or customization options, see [align_eval/README.md](align_eval/README.md).
+
+> **Using an offline/local BERT**
+> If you've already downloaded a Chinese BERT checkpoint, point `--model_name` to that folder. For example, if the weights live next to your run script you can execute:
+> ```bash
+> HF_HUB_OFFLINE=1 \
+> python -m align_eval.cli \
+>   --source_path data/original.json \
+>   --summary_path summaries/my_summary.json \
+>   --output_path reports/align_eval.json \
+>   --model_name ./chinese-bert-wwm-ext
+> ```
+> The directory must include files such as `config.json`, `pytorch_model.bin`, and `vocab.txt`. Setting `HF_HUB_OFFLINE=1` is optional but ensures `transformers` stays offline when corporate mirrors or proxies break TLS handshakes.
 
 - `--summ_path`: JSON mapping of book names to final summaries.
 - `--annot_path`: where the meta commentary annotations should be stored.
